@@ -227,7 +227,7 @@ get_full_owners_investors_aneel_windparks <- function(){
     arrange(company_info)
   
   lacking_information %>% 
-    write_csv("lacking-information-wind.csv")
+    write_csv("intermediate/lacking-information-wind.csv")
   
   return(joined_data)
   
