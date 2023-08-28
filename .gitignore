@@ -1,7 +1,12 @@
 .Rproj.user/*
 data/*
-figures/*
 intermediate/*
-
+figures/*
+*.zip
+*.shp
+*.prj
+*.shx
+*.dbf
+*.cpg
 
 lacking-information-wind.csv
