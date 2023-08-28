@@ -13,110 +13,11 @@ municipalities <- st_read("data/municipalities/BR_Municipios_2022.shp") %>%
 municipalities_intersecting_total <- get_intersecting_municipalities(municipalities, wind_parks, pv_parks) %>% 
   bind_rows(municipalities %>% filter(NM_MUN=="Xique-Xique"))
 
-
-#wind_parks <- st_join(wind_parks, municipalities_intersecting_total %>% 
-#                        dplyr::select(NM_MUN), largest = TRUE) %>% 
-#  mutate(MUNICIP=NM_MUN)
-
-### area wind parks
-#municipalities_intersecting_total %>% 
-#  mutate(area_km2 = as.numeric(st_area(.)) / 10^6) %>%
-#  filter(NM_MUN %in% wind_parks$MUNICIP) %>% 
-#  summarize(area_km2 = sum(area_km2))
-
-#municipalities_intersecting_total %>% 
-#  mutate(area_km2 = as.numeric(st_area(.)) / 10^6) %>%
- # filter(!(NM_MUN %in% wind_parks$MUNICIP)) %>% 
-  #summarize(area_km2 = sum(area_km2))
-
-
-###area municipalities wind parks
-#st_join(municipalities_intersecting_total, wind_parks, largest = TRUE) %>% st_area() %>% sum()/10^6
-
-###area municipalities solar parks
-#st_join(municipalities_intersecting_total, pv_parks, largest = TRUE) %>% st_area() %>% sum()/10^6
-
-#st_write(obj=municipalities_intersecting_total, 
- #        dsn=glue("intermediate/municipalities_intersecting_total.shp"),
-  #       layer_options = "ENCODING=UTF-8", 
-   #      delete_layer = TRUE)
-
-
-#r <- raster("data/gwa/BRA_power-density_100m.tif")
-
-#r_crop <- crop(r, municipalities_intersecting_total)
-
-#plot(r_crop)
-
-#writeRaster(r_crop, "intermediate/gwa-municipalities-crop.tif")
-
 gwa <- raster("intermediate/gwa-municipalities-crop.tif")
-#res(gwa)
 gwa_downsampled <- aggregate(gwa, fact = 10)
 gwa_downsampled <- projectRaster(gwa_downsampled, crs=crs_all)
-#res(gwa_downsampled)
-
-#wind_parks_power_density <- extract(gwa_downsampled, wind_parks)
-#save(wind_parks_power_density, file = "intermediate/wind-parks-power-density.RData")
-#load(file = "intermediate/wind-parks-power-density.RData")
-
-#power_densities <- lapply(wind_parks_power_density, function(x){mean(x, na.rm=TRUE)}) %>% 
-#  unlist()
-
-#wind_parks$power_density <- power_densities
-
-#st_write(obj = wind_parks,
-#         dsn = "intermediate/wind_parks_power_density.shp")
-
 wind_parks <- st_read("intermediate/wind_parks_power_density.shp")
 
-#gwa_summary_mean_windparks <- summary(unlist(lapply(wind_parks_power_density, function(x){mean(x, na.rm=TRUE)})))
-#gwa_summary_min_windparks <- summary(unlist(lapply(wind_parks_power_density, function(x){min(x, na.rm=TRUE)})))
-#e<-ecdf(unlist(lapply(wind_parks_power_density, function(x){min(x, na.rm=TRUE)})))
-cutoff <- 260
-#e(260)
-#mean(unlist(lapply(wind_parks_power_density, function(x){max(x, na.rm=TRUE)})))
-
-#municipality_power_density <- extract(gwa_downsampled, municipalities_intersecting_total)
-#save(municipality_power_density, file = "intermediate/municipality-power-density.RData")
-#load(file = "intermediate/municipality-power-density.RData")
-
-#summary(unlist(lapply(municipality_power_density, function(x){mean(x, na.rm=TRUE)})))
-#summary(unlist(lapply(municipality_power_density, function(x){min(x, na.rm=TRUE)})))
-#summary(unlist(lapply(municipality_power_density, function(x){max(x, na.rm=TRUE)})))
-
-#gwa_polygon <- rasterToPolygons(gwa_downsampled)
-
-
-#gwa_polygon_sf <- st_as_sf(gwa_polygon)
-
-#head(gwa_polygon_sf)
-#st_write(obj=gwa_polygon_sf, 
-#         dsn=glue("intermediate/gwa_polygon_full.shp"),
-#         layer_options = "ENCODING=UTF-8", 
-#         delete_layer = TRUE)
-
-#gwa_polygon_sf <- st_read("intermediate/gwa_polygon_full.shp")
-
-#gwa_polygon_sf_reduced <- gwa_polygon_sf %>% filter(gwa.municipalities.crop > cutoff)
-#st_write(obj=gwa_polygon_sf_reduced, 
-#         dsn=glue("intermediate/gwa_polygon_reduced.shp"),
-#         layer_options = "ENCODING=UTF-8", 
-#         delete_layer = TRUE)
-
-#gwa_polygon_reduced_union <- st_union(gwa_polygon_sf_reduced)
-
-#plot(gwa_polygon_reduced_union)
-
-#municipalities_intersecting_total_intersect_gwa <- st_intersection(municipalities_intersecting_total,
-#                                                     gwa_polygon_reduced_union)
-
-#plot(st_geometry(municipalities_intersecting_total_intersect_gwa))
-
-#st_write(obj=municipalities_intersecting_total_intersect_gwa, 
-#         dsn=glue("intermediate/municipalities_intersecting_total_gwa.shp"),
-#         layer_options = "ENCODING=UTF-8", 
-#        delete_layer = TRUE)
 
 municipalities_intersecting_total_intersect_gwa <- st_read("intermediate/municipalities_intersecting_total_gwa.shp")
 
@@ -133,11 +34,7 @@ random_park_shape_extraction <- function(i, parks, municipalities, technology, P
     print(glue("Starting to randomize park: {i}"))
   }
   
-  #if(technology == "wind" & (i %in% c(183, 45, 85, 120, 160, 183, 297, 316, 317, 345, 569, 46, 71, 298, 387, 315, 340, 385, 578, 579, 299, 314, 384, 433))){
-  #  municipalities <- municipalities_intersecting_total
-  #}
-  
-  park <- parks[i, ]
+    park <- parks[i, ]
   municipality <- park$MUNICIP %>% unlist()
   UF <- park$UF %>% unlist()
   
@@ -191,24 +88,8 @@ random_park_shape_extraction <- function(i, parks, municipalities, technology, P
   if(i %in% c(42, 49, 58, 62, 94, 96, 160, 162, 170, 173, 195, 317, 403, 405, 406, 407, 408, 454, 500, 547)){
     samples <- 600
   }
-  #if(municipality %in% c("Rio do Fogo", 
-  #                       "Barra dos Coqueiros", 
-  #                       "Parazinho", 
-  #                       "Paranatama", 
-  #                       "Tenente Laurentino Cruz",
-  #                       "Marcolândia",
-  #                       "Caetés",
-  #                       "São Bento do Norte",
-  #                       "Santa Luzia") & technology == "wind") {
-  #  samples <- 500
- #
-    
-  #  if(i %in% c(551, 133)){
-  #    samples <- 1000
-  #  }
-
-  #}
-  random_rotation_1 <- runif(1, 0, pi/4)
+ 
+   random_rotation_1 <- runif(1, 0, pi/4)
   random_rotation_2 <- runif(1, pi/4, pi/2)
   random_rotation_3 <- runif(1, pi/2, pi * 3/4)
   random_rotation_4 <- runif(1, pi * 3/4, pi)
@@ -231,9 +112,6 @@ random_park_shape_extraction <- function(i, parks, municipalities, technology, P
   
   parks_new_shifted <-  (st_geometry(parks_new) + st_geometry(points) - st_geometry(centroid_park))
   
-  #for(i in 1:samples){
-  #  parks_new[i] <- (st_geometry(parks_new[i]) - st_geometry(centroid_park))  * rot(random_rotation[i]) + st_geometry(centroid_park)
-  #}
   parks_new_shifted <- st_set_crs(parks_new_shifted, crs(park))
 
   if(PLOT_MAP == TRUE) {  
@@ -304,21 +182,9 @@ random_park_shape_extraction <- function(i, parks, municipalities, technology, P
 }
 
 #### special test cases
-
-municipalities_intersecting_total %>% 
-  bind_rows(municipalities %>% filter(NM_MUN=="Xique-Xique"))
-
 random_park_shape_extraction(2, wind_parks, municipalities_intersecting_total, "wind-control-wind", PLOT_MAP = TRUE)
 random_park_shape_extraction(575, wind_parks, municipalities_intersecting_total, "wind-control-wind", PLOT_MAP = TRUE)
 random_park_shape_extraction(133, wind_parks, municipalities_intersecting_total, "wind", PLOT_MAP = TRUE)
-
-#x<-random_park_shape_extraction(62, wind_parks, PLOT_MAP = TRUE)
-#x<-random_park_shape_extraction(133, wind_parks, PLOT_MAP = TRUE)
-#x<-random_park_shape_extraction(551, wind_parks, PLOT_MAP = TRUE)
-#x<-random_park_shape_extraction(346, wind_parks, PLOT_MAP = TRUE)
-
-#random_park_shape_extraction(1, wind_parks, PLOT_MAP = TRUE)
-#random_park_shape_extraction(1, pv_parks, PLOT_MAP = TRUE)
 
 write_several_parks <- function(n, parks, municipalities, technology, identifier){
   counter<-1
@@ -347,23 +213,10 @@ write_several_parks <- function(n, parks, municipalities, technology, identifier
       print("no park written.")
     }
     else{
-      #st_geometry(parks_new) <- st_geometry(parks_final_random)
-      #st_geometry(parks_new[345, ]) <- st_geometry(wind_parks[345, ])
-      #parks_new <- st_set_crs(parks_new, crs(parks))
-      
-      #wind_parks_power_density <- extract(gwa_downsampled, parks_new)
-      
-      #power_densities <- lapply(wind_parks_power_density, function(x){mean(x, na.rm=TRUE)}) %>% 
-      #  unlist()
-      
-      #parks_new$power_density <- power_densities
       st_geometry(parks_new) <- st_geometry(parks_final_random)
       parks_power_density <- exact_extract(gwa_downsampled, parks_new, "mean")
       
       parks_new$pwr_dns <- parks_power_density
-      
-      #park_new_final <- st_as_sf(parks_new_shifted[which.max(parks_new_shifted$power_density)])
-      
       
       st_write(obj=parks_new, 
              dsn=glue("intermediate/random-shapes/{identifier}-{technology}-{counter}.shp"),

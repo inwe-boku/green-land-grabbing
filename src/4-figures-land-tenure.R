@@ -175,9 +175,6 @@ privatizations_park <- all_intersections_wind %>%
   mutate(area_km2_share = 100 * area_km2/sum(area_km2)) %>% 
   ungroup()
 
-####### Finding 1
-####### no relation between wind speed density and privatizations
-
 summary(lm(area_km2_share ~ power_density, data = privatizations_park %>% 
              filter(runid=="observed")))
 summary(lm(area_km2_share ~ power_density, data = privatizations_park %>% 

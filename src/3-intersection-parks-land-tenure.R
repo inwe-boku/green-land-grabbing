@@ -12,9 +12,6 @@ land_tenure <- st_make_valid(land_tenure)
 crs_all <- crs(land_tenure)
 
 
-#land_tenure <- land_tenure %>% 
-#  st_transform(crs_all)
-
 make_intersection_aggregate <- function(parks, land_tenure){
   intersect_parks %>% 
     mutate(area_km2 = as.numeric(st_area(.))/10^6) %>% 
