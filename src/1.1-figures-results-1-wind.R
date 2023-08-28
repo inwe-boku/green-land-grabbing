@@ -62,11 +62,14 @@ p <- do_sankey(title="Owner", joined_data_wind_, "Direct owner", 6, "I", -1, 0.7
 p
 ggsave("figures/sankey-wind-owner.eps", p, width = 12, height = 6)
 ggsave("figures/sankey-wind-owner.pdf", p, width = 12, height = 6)
+ggsave("figures/sankey-wind-owner.png", p, width = 12, height = 6)
+
 
 p <- do_sankey(title="Investor", joined_data_wind_, "Direct investor", 6, "I", -1, 0.7, 0.3, 1)
 p
 ggsave("figures/sankey-wind-investor.eps", p, width = 12, height = 6)
 ggsave("figures/sankey-wind-investor.pdf", p, width = 12, height = 6)
+ggsave("figures/sankey-wind-investor.png", p, width = 12, height = 6)
 
 
 has_international_involvment <- joined_data_wind_ %>% 

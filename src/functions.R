@@ -417,7 +417,7 @@ do_sankey <- function(joined_data, type, nmb_companies, colormap = "D", title = 
     arrange(desc(area)) %>%
     mutate(i = 1:n()) %>% 
     ungroup() %>% 
-    mutate(single = ifelse(i < nmb_companies, company_name, "Other regions")) %>% 
+    mutate(single = ifelse(i < nmb_companies, company_name, "Other companies")) %>% 
     group_by(single, Country_Category, Type, company_info_act_parent, parent_Country_Category) %>% 
     summarize(area = sum(area)) %>% 
     arrange(area) %>% 
@@ -428,15 +428,15 @@ do_sankey <- function(joined_data, type, nmb_companies, colormap = "D", title = 
     mutate(source = ifelse(is.na(source), "No information", source))
   
   level3 <- joined_data_cat %>% 
-    mutate(company_info_act_parent = ifelse(single =="Other regions", "Other regions", company_info_act_parent)) %>% 
+    mutate(company_info_act_parent = ifelse(single =="Other companies", "Other companies", company_info_act_parent)) %>% 
     mutate(company_info_act_parent = ifelse(single == company_info_act_parent, glue("{single}"), company_info_act_parent)) %>% 
     dplyr::select(source=single, target=company_info_act_parent, value=area)  %>% 
-    mutate(target = ifelse(is.na(target), "Other regions", target)) %>% 
-    mutate(source = ifelse(is.na(source), "Other regions", source))
+    mutate(target = ifelse(is.na(target), "Other companies", target)) %>% 
+    mutate(source = ifelse(is.na(source), "Other companies", source))
   
   
   level4 <- joined_data_cat %>% 
-    mutate(company_info_act_parent = ifelse(single =="Other regions", "Other regions", company_info_act_parent)) %>% 
+    mutate(company_info_act_parent = ifelse(single =="Other companies", "Other companies", company_info_act_parent)) %>% 
     mutate(company_info_act_parent = ifelse(single == company_info_act_parent, glue("{single}"), company_info_act_parent)) %>% 
     mutate(parent_Country_Category = glue("{parent_Country_Category}")) %>% 
     dplyr::select(source=company_info_act_parent, target=parent_Country_Category, value=area)  %>% 

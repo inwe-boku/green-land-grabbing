@@ -53,6 +53,7 @@ municipalities_intersecting_total <- get_intersecting_municipalities(municipalit
 gwa <- raster("intermediate/gwa-municipalities-crop.tif")
 #res(gwa)
 gwa_downsampled <- aggregate(gwa, fact = 10)
+gwa_downsampled <- projectRaster(gwa_downsampled, crs=crs_all)
 #res(gwa_downsampled)
 
 #wind_parks_power_density <- extract(gwa_downsampled, wind_parks)
@@ -307,7 +308,7 @@ random_park_shape_extraction <- function(i, parks, municipalities, technology, P
 municipalities_intersecting_total %>% 
   bind_rows(municipalities %>% filter(NM_MUN=="Xique-Xique"))
 
-random_park_shape_extraction(548, wind_parks, municipalities_intersecting_total, "wind-control-wind", PLOT_MAP = TRUE)
+random_park_shape_extraction(2, wind_parks, municipalities_intersecting_total, "wind-control-wind", PLOT_MAP = TRUE)
 random_park_shape_extraction(575, wind_parks, municipalities_intersecting_total, "wind-control-wind", PLOT_MAP = TRUE)
 random_park_shape_extraction(133, wind_parks, municipalities_intersecting_total, "wind", PLOT_MAP = TRUE)
 
@@ -359,7 +360,7 @@ write_several_parks <- function(n, parks, municipalities, technology, identifier
       st_geometry(parks_new) <- st_geometry(parks_final_random)
       parks_power_density <- exact_extract(gwa_downsampled, parks_new, "mean")
       
-      parks_new$power_density <- parks_power_density
+      parks_new$pwr_dns <- parks_power_density
       
       #park_new_final <- st_as_sf(parks_new_shifted[which.max(parks_new_shifted$power_density)])
       
@@ -379,51 +380,22 @@ municipalities_intersecting_total_intersect_gwa <- st_transform(municipalities_i
 
 
 
-suppressMessages(write_several_parks(1, wind_parks, municipalities_intersecting_total, "wind-control-wind", "whole-area-control-wind"))
-suppressMessages(write_several_parks(1, wind_parks, municipalities_intersecting_total, "wind-random", "whole-area"))
-suppressMessages(write_several_parks(1, pv_parks, municipalities_intersecting_total, "pv", "whole-area"))
-#suppressMessages(write_several_parks(200, wind_parks, municipalities_intersecting_total_intersect_gwa, "wind", "area-5p"))
+write_several_parks(1, wind_parks, municipalities_intersecting_total, "wind-control-wind", "whole-area-control-wind")
+write_several_parks(1, wind_parks, municipalities_intersecting_total, "wind-random", "whole-area")
+write_several_parks(1, pv_parks, municipalities_intersecting_total, "pv", "whole-area")
 
-st_area(p)
-parks1<-st_read("intermediate/random-shapes/whole-area-control-wind-wind-control-wind-1.shp")
-parks2<-st_read("intermediate/random-shapes/whole-area-wind-random-1.shp")
-parks3<-st_read("intermediate/random-shapes/whole-area-pv-1.shp")
+parks_wind_control<-st_read("intermediate/random-shapes/whole-area-control-wind-wind-control-wind-1.shp")
+parks_random_control<-st_read("intermediate/random-shapes/whole-area-wind-random-1.shp")
+parks_pv<-st_read("intermediate/random-shapes/whole-area-pv-1.shp")
 
 plot(wind_parks)
 parks_power_density <- exact_extract(gwa_downsampled, wind_parks, "mean")
 mean(parks_power_density)
 
-plot(parks1)
-parks_power_density <- exact_extract(gwa_downsampled, parks1, "mean")
+plot(parks_wind_control)
+parks_power_density <- exact_extract(gwa_downsampled, parks_wind_control, "mean")
 mean(parks_power_density)
 
-plot(parks2)
-parks_power_density <- exact_extract(gwa_downsampled, parks2, "mean")
+plot(parks_random_control)
+parks_power_density <- exact_extract(gwa_downsampled, parks_random_control, "mean")
 mean(parks_power_density, na.rm=TRUE)
-
-
-
-#parks2<-st_read("intermediate/random-shapes/whole-area-wind-1.shp")
-
-#wind_parks_power_density <- extract(gwa_downsampled, wind_parks)
-#summary(unlist(lapply(wind_parks_power_density, function(x){mean(x, na.rm=TRUE)})))
-
-#wind_parks_power_density <- extract(gwa_downsampled, parks1)
-#summary(unlist(lapply(wind_parks_power_density, function(x){mean(x, na.rm=TRUE)})))
-
-#wind_parks_power_density <- extract(gwa_downsampled, parks2)
-#summary(unlist(lapply(wind_parks_power_density, function(x){mean(x, na.rm=TRUE)})))
-
-#x<-random_park_shape_extraction(45, wind_parks, municipalities_intersecting_total_intersect_gwa, "wind", PLOT_MAP = TRUE)
-#x<-random_park_shape_extraction(120, wind_parks, municipalities_intersecting_total_intersect_gwa,"wind",  PLOT_MAP = TRUE)
-#x<-random_park_shape_extraction(317, wind_parks, municipalities_intersecting_total_intersect_gwa, "wind", PLOT_MAP = TRUE)
-#x<-random_park_shape_extraction(569, wind_parks, municipalities_intersecting_total_intersect_gwa, "wind", PLOT_MAP = TRUE)
-
-
-#### legacy code ####
-#municipalities %>% filter(startsWith(NM_MUN, "Tenente"))
-
-#wind_parks %>% filter(startsWith(MUNICIP, "Emas"))
-#pv_parks %>% filter(startsWith(MUNICIP, "Emas"))
-
-

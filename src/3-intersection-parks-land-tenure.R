@@ -29,7 +29,7 @@ wind_parks <-st_read("intermediate/wind_parks_power_density.shp") %>%
 p_random <- st_read("intermediate/random-shapes/whole-area-wind-1.shp") %>% 
   st_transform(crs_all)
 
-p_random_wind <- p_random <- st_read("intermediate/random-shapes/whole-area-control-wind-wind-control-wind-1.shp") %>% 
+p_random_wind <- st_read("intermediate/random-shapes/whole-area-control-wind-wind-control-wind-1.shp") %>% 
   st_transform(crs_all)
 
 
