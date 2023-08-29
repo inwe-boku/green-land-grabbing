@@ -9,9 +9,13 @@ p_load(fs, stringi, writexl, tidyverse, readxl, sf, fuzzyjoin, raster, rgeos,
 theme_set(theme_bw())
 theme_update(text = element_text(size = 10))
 
+R_PV <- 0.58
+R_WIND <- 0.7
+
 sf_use_s2(TRUE)
 
 load_single_final_wind_parks_from_shape <- function(crs_all){
+       
   st_read("intermediate/wind_bloom.shp") %>% 
     mutate(dat_clos = as.Date(dat_cls)) %>% 
     group_by(Key) %>% 
@@ -29,9 +33,7 @@ load_single_final_wind_parks_from_shape <- function(crs_all){
     dplyr::select(Key, Start_yr, INICIO, UF, MUNICIP, dat_cls, dat_clos) %>% 
     unique() %>% 
     mutate(unique_id = c(1:n())) 
-    
-    
-  
+       
 }
 
 load_single_final_pv_parks_from_shape <- function(crs_all){
@@ -107,8 +109,6 @@ load_wind_data <- function() {
   get_full_owners_investors_aneel_windparks(join_bloomberg_aneel_owners,
                                                            join_bloomberg_aneel_investors,
                                                            organizations_unique)
-  
-
 }
 
 load_pv_data <- function(){
@@ -126,7 +126,6 @@ load_pv_data <- function(){
                                                             organizations_unique)
   
   return(joined_data)
-  
 }
 
 figure_investments_by_company <- function(joined_data, file_name){
@@ -191,38 +190,6 @@ aggregate_data_by_region_full <- function(joined_data_region){
     left_join(joined_data_region) %>% 
     mutate(POT_MW=ifelse(is.na(POT_MW),0,POT_MW))  %>% 
     mutate(area=ifelse(is.na(area),0,area))  
-  
-}
-
-
-figure_map_investors <- function(joined_data, file_name) {
-  tot_area <- joined_data %>% 
-    group_by(Type) %>% 
-    summarize(area = sum(area)) %>% 
-    dplyr::select(area) %>% 
-    unlist() %>% 
-    .[1]
-  
-  
-  map.world <- map_data("world")
-  
-  country_grouped <- joined_data %>% 
-    group_by(Country, Type) %>% 
-    summarize(area_share = 100 * sum(area) / tot_area) 
-  
-  p <- map.world %>% 
-    full_join(country_grouped, by = c("region" = "Country")) %>% 
-    filter(!is.na(Type)) %>% 
-    #filter(region != "Brazil") %>% 
-    ggplot() +
-    geom_polygon(data = map.world, (aes(x= long, y = lat, group = group)), alpha = 0.3) +
-    geom_polygon(aes(x = long, y = lat, group = group, fill = area_share)) +
-    facet_wrap(.~Type, scale = "free")
-  
-  plot(p)
-  
-  ggsave(file_name, p, width = 10, height = 6)
-  
   
 }
 
@@ -291,35 +258,6 @@ derive_shape_file_pv <- function(areas_pv, aneel_pv, joined_data_pv){
     dplyr::select(Key, AREA_ID) %>% 
     right_join(joined_data_pv,by=c("Key"="Key")) 
 
-}
-
-find_threshold_overlap <- function(areas,
-                                   threshold_overlap,
-                                   up){
-  
-  overlap <- 1000
-  j <- 0
-  while(overlap > threshold_overlap){
-    st_rand <- st_make_valid(areas)
-    j <- j + 1
-    print(glue("Iteration: {j}"))
-    
-    x <- runif(1, -up, 0)
-    y <- runif(1, -up, 0)
-    red_point <- data.frame(x=x, y=y) %>% 
-      st_as_sf(coords = c("x", "y"))
-    
-    # add the two geometries together (just the geometry columns!)
-    st_geometry(st_rand) <- st_geometry(st_rand) + red_point$geometry
-    
-    st_rand <- st_set_crs(st_rand, st_crs(areas))
-    
-    intersect <- st_intersection(areas, st_rand)
-    overlap <- as.numeric(st_area(intersect) %>% sum()/10^6)
-  }
-  print(glue("Overlap: {overlap}"))
-  return(st_rand)
-  
 }
 
 print_largest_companies <- function(joined_data, investor_type){
@@ -392,7 +330,6 @@ shorten_company_name <- function(company, country, length_tot = 40, linebreak = 
   
 }
 
-# A connection data frame is a list of flows with intensity for each flow
 do_sankey <- function(joined_data, type, nmb_companies, colormap = "D", title = "", direction=-1, alpha = 1, begin = 0, end = 1){
   
   
@@ -482,21 +419,6 @@ do_sankey <- function(joined_data, type, nmb_companies, colormap = "D", title = 
     bind_rows(level3_long) %>% 
     bind_rows(level4_long) 
   
-  #full_data$x <- recode_factor(full_data$x, Direct = paste("Direct ", tolower(title)), 
-  #                                Parent = paste("Parent ", tolower(title)))
-  
-#  full_data$next_x <- recode_factor(full_data$next_x, Direct = paste("Direct ", tolower(title)), 
-  #                             Parent = paste("Parent ", tolower(title)))
-  
-  
-  
-    
-                      
-                      
-  
-  #full_data$node <- factor(full_data$node, levels=unique(full_data$node[sort(full_data$value)]))
-    
-  
   p <-   full_data %>% 
     ggplot( aes(x = x,
                 next_x = next_x,
@@ -515,33 +437,11 @@ do_sankey <- function(joined_data, type, nmb_companies, colormap = "D", title = 
     ggtitle(title)
   
   p
-  
-  
-  #nodes <- data.frame(
-  #  name=c(as.character(source_data$source), 
-  #         as.character(source_data$target)) %>% unique()
-  #)
-  
-  # With networkD3, connection must be provided using id, not using real name like in the links dataframe.. So we need to reformat it.
-  #source_data$IDsource <- match(source_data$source, nodes$name)-1 
-  #source_data$IDtarget <- match(source_data$target, nodes$name)-1
-  
-  # Make the Network
-  #p <- sankeyNetwork(Links = source_data, Nodes = nodes,
-  #                   Source = "IDsource", Target = "IDtarget",
-  #                   Value = "value", NodeID = "name", 
-  #                   sinksRight=FALSE,
-  #                   fontSize=15,
-  #                   iterations=iterations)
-  
-  #saveNetwork(p, filename)
-  
-  
+
 }
 
 
-R_PV <- 0.58
-R_WIND <- 0.7
+
 
 get_full_owners_investors_aneel_solarparks<-function(join_bloomberg_aneel_owners,
                                                      join_bloomberg_aneel_investors,
@@ -571,7 +471,6 @@ get_full_owners_investors_aneel_solarparks<-function(join_bloomberg_aneel_owners
   
   
   #### join with bloomberg data to check investor area, assuming that investors are equally invested
-  
   direct_investor <- join_bloomberg_aneel_investors %>% 
     left_join(organizations_unique,by=c("org_name"="Organization Name Matched")) %>% 
     mutate(Type="Direct investor") %>% 
@@ -579,31 +478,14 @@ get_full_owners_investors_aneel_solarparks<-function(join_bloomberg_aneel_owners
     mutate(company_info_act=paste0(org_name)) %>% 
     dplyr::select(Key, Start_year, UF, INICIO_OPE=INIC_OPER, MUNIC, POT_MW=POT_MW_SHARE, area=area_share_km2, Country, Type, share, company_info, company_name=org_name, ownership_p, date_close, company_info_act)
   
-  nrow(direct_investor)
-  
-  direct_investor %>% summarize(POT_MW=sum(POT_MW))
-  
-  direct_investor %>% filter(is.na(Country)) %>% nrow()
-  
-  xx<-direct_investor %>% filter(is.na(Country))
-  
-  
   #### join with bloomberg data to check parent of investor area, assuming that investors are equally invested
   parent_investor <- join_bloomberg_aneel_investors %>% 
-    #  dplyr::select(`Key`, UF, MUNIC, , POT_MW, POT_MW_SHARE, org_name, Start_year, area_share_km2) %>% 
     left_join(organizations_unique,by=c("org_name"="Organization Name Matched")) %>%
     left_join(organizations_unique,by=c("Parent/Operational Investor"="Organization Name Matched")) %>% 
     mutate(Type="Parent investor") %>% 
     mutate(company_info=paste0("Parent investor: ", org_name, " parent: ", `Parent/Operational Investor`)) %>% 
     mutate(company_info_act=paste0(`Parent/Operational Investor`)) %>% 
     dplyr::select(Key, Start_year, UF, INICIO_OPE=INIC_OPER, MUNIC, POT_MW=POT_MW_SHARE, area=area_share_km2, Country=Country.y, Type, share, company_info, company_name=org_name, ownership_p, date_close, company_info_act)
-  
-  
-  nrow(parent_investor)
-  
-  #parent_investor %>% summarize(a=sum(area)/100)
-  
-  parent_investor %>% filter(is.na(Country)) %>% nrow()
   
   joined_data <- bind_rows(direct_owner, 
                            parent_owner,
@@ -638,9 +520,7 @@ get_full_owners_investors_aneel_solarparks_including_parents<-function(join_bloo
     mutate(company_info_act_parent=`Organization Name Matched.y`) %>% 
     dplyr::select(Key, Start_year, UF, INIC_OPER, MUNIC, area=area_share_km2, POT_MW=POT_MW_SHARE, Country, Type, share, Key, company_info, company_name = `Organization Name Matched.x`, ownership_p, date_close, company_info_act, company_info_parent, company_info_act_parent, parent_country) 
   
-    
   #### join with bloomberg data to check investor area, assuming that investors are equally invested
-  
   direct_investor <- join_bloomberg_aneel_investors %>% 
     left_join(organizations_unique,by=c("org_name"="Organization Name Matched")) %>% 
     mutate(Type="Direct investor") %>% 
@@ -654,10 +534,6 @@ get_full_owners_investors_aneel_solarparks_including_parents<-function(join_bloo
     mutate(company_info_parent=paste0("Parent investor: ", org_name, " parent: ", `Parent/Operational Investor`)) %>% 
     mutate(company_info_act_parent=`Parent/Operational Investor`) %>% 
     dplyr::select(Key, Start_year, UF, INIC_OPER, MUNIC, area=area_share_km2, POT_MW=POT_MW_SHARE, Country, Type, share, Key, company_info, company_name = org_name, ownership_p, date_close, company_info_act, company_info_parent, company_info_act_parent, parent_country) 
-  
-    
-    
-    
     
   joined_data <- bind_rows(direct_owner, 
                            direct_investor) %>%
@@ -670,8 +546,6 @@ get_full_owners_investors_aneel_solarparks_including_parents<-function(join_bloo
     mutate(parent_Country_Category=ifelse(parent_country %in% c("Canada", "United States"),"North America", parent_Country_Category)) %>% 
     mutate(parent_Country_Category=ifelse(parent_country %in% c("China","Hong Kong", "Bahrain", "Australia", "Argentina", "Colombia", "Qatar"),"Other", parent_Country_Category))  
   
-  
-  
   return(joined_data)
   
 }
@@ -681,8 +555,6 @@ load_aneel_wind <- function(){
     filter(FASE %in% c("Operação", "Construção", "Construção não iniciada"))
   
   clean_aneel_names(wind_parks_aneel_shape) 
-  
-
 }
 
 derive_shape_file_wind <- function(aneel_areas_wind, joined_data_wind){
@@ -690,7 +562,6 @@ derive_shape_file_wind <- function(aneel_areas_wind, joined_data_wind){
     dplyr::select(Key) %>% 
     full_join(joined_data_wind,by=c("Key"="Key")) %>% 
     filter(!is.na(Start_year))
-  
 }
 
 get_full_owners_investors_aneel_windparks <- function(join_bloomberg_aneel_owners,
@@ -745,13 +616,6 @@ get_full_owners_investors_aneel_windparks <- function(join_bloomberg_aneel_owner
     mutate(company_info=paste0("Parent investor: ", org_name, " parent: ", `Parent/Operational Investor`)) %>% 
     mutate(company_info_act=`Parent/Operational Investor`) %>% 
     dplyr::select(Key, Start_year, UF, INICIO_OPE, MUNIC1, area=AREA_M2_SHARE, POT_MW=POT_MW_SHARE, Country=Country, Type, share, company_info, company_name = org_name, date_close, company_info_act)
-  
-  
-  nrow(parent_investor)
-  
-  parent_investor %>% summarize(a=sum(area)/100)
-  
-  parent_investor %>% filter(is.na(Country)) %>% nrow()
   
   
   #join all datasets together
@@ -844,7 +708,6 @@ get_full_owners_investors_aneel_windparks_including_parents <- function(join_blo
 
 
 get_organizations_windparks <- function(){
-  ####check if anything strange is happening during the merge
   organizations <- read_xlsx("data/organizations_A-Z_2022_matched.xlsx") %>% 
     bind_rows(tibble(`Organization Name Matched`=c("Forca Eolica Do Brasil", 
                                                    "MSU Energy SA",
@@ -911,7 +774,6 @@ get_organizations_windparks <- function(){
     return()
 }
 
-
 get_windparks_aneel_bloomberg_owners_investors <- function(){
   sf_use_s2(TRUE)
   
@@ -923,20 +785,13 @@ get_windparks_aneel_bloomberg_owners_investors <- function(){
     dplyr::select(Name,Key) %>%   
     unique()
 
-  #wind_parks_aneel <- st_read("data/wind-parks_JOIN_turbines_power-plants_EOL_BR_aneel_04-02-2022.shp")  %>% 
-  #  filter(FASE %in% c("Operação", "Construção", "Construção não iniciada"))
-  
-    
   wind_parks_aneel <- st_read("data/wind-parks_JOIN_turbines_power-plants_EOL_BR_aneel_10_05_2023_collected_encoded_fin.shp") %>% 
     filter(FASE %in% c("Operação", "Construção", "Construção não iniciada")) %>% 
     mutate(area_check = as.numeric(st_area(.))/10^6) %>% 
     mutate(AREA_M2 = area_check) %>% 
     mutate(POT_MW = as.numeric(POT_MW))
   
-  #st_geometry(wind_parks_aneel) <- st_geometry(wind_parks_aneel_geometry)
-  
-  ###area bahia
-  wind_parks_aneel<-clean_aneel_names(wind_parks_aneel) %>% 
+ wind_parks_aneel<-clean_aneel_names(wind_parks_aneel) %>% 
     as_tibble()
   
   wind_parks_aneel_shape<-clean_aneel_names(wind_parks_aneel) 
@@ -996,8 +851,6 @@ get_windparks_aneel_bloomberg_owners_investors <- function(){
 
 
 get_solar_aneel_bloomberg_owners_investors<-function(){
-  
-  
   
   full_data_bloomberg<-load_bloomberg_data()
   
@@ -1185,8 +1038,6 @@ get_organizations_solarparks<-function(){
   return(organizations_unique)
 }
 
-#is broken....
-
 spatial_join_date<-function(shape_file, area_land_tenure){
   
   shape_file <- shape_file %>% 
@@ -1209,7 +1060,6 @@ spatial_join_date<-function(shape_file, area_land_tenure){
   return(private_land_bloomberg)
     
 }
-
 
 clean_bloomberg_names<-function(full_data, Technology="Wind"){
   full_data_selection<-full_data %>% 
@@ -1422,12 +1272,7 @@ clean_bloomberg_names<-function(full_data, Technology="Wind"){
      }
   
   
-  #full_data_selection <- full_data_selection %>% 
-  #  mutate(Key=ifelse(Key=="BomJardim", ifelse(`Project name`=="IMPSA Bom Jardim Wind Farm","IMPSABomJardim","WobbenBomJardim"),Key)) %>% 
-  #  mutate(Key=ifelse(Key=="CanoaQuebrada", ifelse(`Project name`=="Rosa dos Ventos Canoa Quebrada Wind Farm","RosaDosVentosCanoaQuebrada","ServtecCanoaQuebrada"),Key)) %>% 
-  #  mutate(Key=ifelse(Key=="Guajiru", ifelse(`Project name`=="Copel Guajiru Wind Farm","CopelGuajiru","EngieGuajiru"),Key)) 
-    
-  return(full_data_selection %>% mutate(Key=tolower(Key)))
+   return(full_data_selection %>% mutate(Key=tolower(Key)))
 }
 
 clean_aneel_names<-function(power_plants_aneel){
@@ -1437,13 +1282,7 @@ clean_aneel_names<-function(power_plants_aneel){
     mutate(Key=str_replace_all(Key, " ","")) %>% 
     mutate(Key=stri_trans_general(Key,"latin-ascii")) %>% 
     mutate(Key=str_replace_all(Key,"(AntigaSteelconsMiracema1)","")) 
-    #mutate(Key=str_replace_all(Key,"(AntigaSteelconsMiracema1)","")) %>% 
-    #mutate(Key=str_replace_all(Key,"(AntigaSteelconsMiracema1)","")) %>% 
-    #mutate(Key=str_replace_all(Key,"(AntigaSteelconsMiracema1)","")) %>% 
-    #mutate(Key=str_replace_all(Key,"(AntigaSteelconsMiracema1)","")) %>% 
-    
-  
-  
+ 
   
   return(power_plants_aneel %>% mutate(Key=tolower(Key)))
   
@@ -1461,8 +1300,6 @@ load_bloomberg_data<-function(){
   
   wind_solar <- wind_solar %>% 
     filter(!(project_status %in% c("Decommissioned","Project abandoned")))
-  
-  #####Filter here: "abandoned" "decommissioned" in column "Project >> Status"
   
   owners<-bind_rows(wind_owners,solar_owners) %>% 
     mutate(re_prj_ID=`Renewable Project ID`)
